@@ -1,36 +1,3 @@
 apiVersion: v1
-entries:
-  zeroclaw:
-  - apiVersion: v2
-    appVersion: latest
-    created: "2026-02-17T09:24:09.988393272Z"
-    description: Helm chart for deploying ZeroClaw on Kubernetes
-    digest: 84d5baf11e21b401f50b3a0978eddd185ca851524d9b88339460dfb0fcb91dfa
-    home: https://github.com/niklasfrick/zeroclaw-helm
-    maintainers:
-    - name: niklasfrick
-      url: https://github.com/niklasfrick
-    name: zeroclaw
-    sources:
-    - https://github.com/niklasfrick/zeroclaw-helm
-    type: application
-    urls:
-    - https://github.com/niklasfrick/zeroclaw-helm/releases/download/zeroclaw-0.1.0/zeroclaw-0.1.0.tgz
-    version: 0.1.0
-  - apiVersion: v2
-    appVersion: latest
-    created: "2026-02-17T09:16:40.604630989Z"
-    description: Helm chart for deploying ZeroClaw on Kubernetes
-    digest: d7b5e3dd93bc1ab324df040be9f665ffd3ae87e455eef364a7709e2b318cc5a1
-    home: https://github.com/niklasfrick/zeroclaw-helm
-    maintainers:
-    - name: niklasfrick
-      url: https://github.com/niklasfrick
-    name: zeroclaw
-    sources:
-    - https://github.com/niklasfrick/zeroclaw-helm
-    type: application
-    urls:
-    - https://github.com/niklasfrick/zeroclaw-helm/releases/download/zeroclaw-0.0.1/zeroclaw-0.0.1.tgz
-    version: 0.0.1
-generated: "2026-02-17T09:24:09.98840685Z"
+entries: {}
+generated: "2026-02-17T00:00:00Z"
