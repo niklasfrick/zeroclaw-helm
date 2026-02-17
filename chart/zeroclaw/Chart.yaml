@@ -5,7 +5,7 @@ type: application
 version: 0.1.0
 appVersion: "latest"
 home: https://github.com/niklasfrick/zeroclaw-helm
-icon: https://github.com/zeroclaw-labs/zeroclaw/blob/69a9adde33ae69ec379f00d430238a852902a0e2/zeroclaw.png
+icon: https://raw.githubusercontent.com/zeroclaw-labs/zeroclaw/main/zeroclaw.png
 sources:
   - https://github.com/niklasfrick/zeroclaw-helm
   - https://github.com/zeroclaw-labs/zeroclaw
