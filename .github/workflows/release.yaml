@@ -1,0 +1,106 @@
+name: Release Charts
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    # Skip version-bump commits pushed by this workflow
+    if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.20.0
+
+      - name: Determine next version
+        id: version
+        run: |
+          # Find the latest chart release tag (format: zeroclaw-x.y.z)
+          LATEST_TAG=$(git tag -l "zeroclaw-*" --sort=-v:refname | head -n1)
+
+          if [ -z "$LATEST_TAG" ]; then
+            # First release — use the version already in Chart.yaml
+            VERSION=$(grep '^version:' chart/zeroclaw/Chart.yaml | awk '{print $2}')
+            echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::First release: ${VERSION}"
+            exit 0
+          fi
+
+          # Parse current version from the tag
+          CURRENT_VERSION="${LATEST_TAG#zeroclaw-}"
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+
+          # Collect commit subjects since last release
+          COMMITS=$(git log "${LATEST_TAG}..HEAD" --pretty=format:"%s")
+
+          if [ -z "$COMMITS" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No new commits since ${LATEST_TAG} — skipping release"
+            exit 0
+          fi
+
+          # Conventional-commit based version bump
+          if echo "$COMMITS" | grep -qE '^[a-z]+(\(.+\))?!:|BREAKING CHANGE'; then
+            MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0
+            echo "::notice::Breaking change detected — major bump"
+          elif echo "$COMMITS" | grep -qE '^feat(\(.+\))?:'; then
+            MINOR=$((MINOR + 1)); PATCH=0
+            echo "::notice::Feature detected — minor bump"
+          else
+            PATCH=$((PATCH + 1))
+            echo "::notice::Patch bump (default)"
+          fi
+
+          NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+          echo "version=${NEW_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          echo "::notice::Next version: ${NEW_VERSION} (from ${CURRENT_VERSION})"
+
+      - name: Update Chart.yaml version
+        if: steps.version.outputs.changed == 'true'
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          sed -i "s/^version:.*/version: ${VERSION}/" chart/zeroclaw/Chart.yaml
+          echo "Chart.yaml updated to version ${VERSION}"
+
+      - name: Lint chart
+        if: steps.version.outputs.changed == 'true'
+        run: helm lint chart/zeroclaw
+
+      - name: Run chart-releaser
+        if: steps.version.outputs.changed == 'true'
+        uses: helm/chart-releaser-action@v1
+        with:
+          charts_dir: chart
+          skip_existing: true
+          mark_as_latest: true
+          pages_branch: gh-pages
+        env:
+          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: Push Chart.yaml version update
+        if: steps.version.outputs.changed == 'true'
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          git add chart/zeroclaw/Chart.yaml
+          git commit -m "chore(release): v${VERSION}"
+          git push

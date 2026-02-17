@@ -1,0 +1,12 @@
+chart-dirs:
+  - chart
+
+target-branch: main
+
+# Version increment is handled automatically by the release workflow,
+# so we don't enforce it during PR linting.
+check-version-increment: false
+
+validate-maintainers: false
+
+helm-extra-args: --timeout 600s
