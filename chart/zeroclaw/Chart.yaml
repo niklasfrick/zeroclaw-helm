@@ -2,5 +2,11 @@ apiVersion: v2
 name: zeroclaw
 description: Helm chart for deploying ZeroClaw on Kubernetes
 type: application
-version: 0.1.0
+version: 0.0.1
 appVersion: "latest"
+home: https://github.com/niklasfrick/zeroclaw-helm
+sources:
+  - https://github.com/niklasfrick/zeroclaw-helm
+maintainers:
+  - name: niklasfrick
+    url: https://github.com/niklasfrick

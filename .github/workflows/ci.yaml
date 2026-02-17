@@ -1,0 +1,95 @@
+name: Lint and Test Charts
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  lint-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.20.0
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Set up chart-testing
+        uses: helm/chart-testing-action@v2
+
+      - name: List changed charts
+        id: list-changed
+        run: |
+          changed=$(ct list-changed --config ct.yaml --target-branch ${{ github.event.repository.default_branch }})
+          if [[ -n "$changed" ]]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run chart-testing (lint)
+        if: steps.list-changed.outputs.changed == 'true'
+        run: ct lint --config ct.yaml --target-branch ${{ github.event.repository.default_branch }}
+
+      - name: Run helm template (defaults)
+        if: steps.list-changed.outputs.changed == 'true'
+        run: helm template zeroclaw chart/zeroclaw
+
+      - name: Run helm template (ingress)
+        if: steps.list-changed.outputs.changed == 'true'
+        run: |
+          helm template zeroclaw chart/zeroclaw \
+            --set ingress.enabled=true \
+            --set "ingress.className=nginx" \
+            --set "ingress.hosts[0].host=zeroclaw.example.com" \
+            --set "ingress.hosts[0].paths[0].path=/" \
+            --set "ingress.hosts[0].paths[0].pathType=Prefix"
+
+      - name: Run helm template (httpRoute)
+        if: steps.list-changed.outputs.changed == 'true'
+        run: |
+          helm template zeroclaw chart/zeroclaw \
+            --set httpRoute.enabled=true
+
+      - name: Run helm template (daemon mode)
+        if: steps.list-changed.outputs.changed == 'true'
+        run: |
+          helm template zeroclaw chart/zeroclaw \
+            --set config.mode=daemon \
+            --set channels.telegram.enabled=true
+
+      - name: Install kubeconform
+        if: steps.list-changed.outputs.changed == 'true'
+        run: |
+          KUBECONFORM_VERSION="v0.7.0"
+          curl -sSL "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" | \
+            tar xz -C /usr/local/bin
+
+      - name: Validate rendered templates
+        if: steps.list-changed.outputs.changed == 'true'
+        run: |
+          helm template zeroclaw chart/zeroclaw | \
+            kubeconform -strict -summary \
+              -kubernetes-version 1.29.0 \
+              -schema-location default \
+              -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
+              -ignore-missing-schemas
+
+      - name: Create kind cluster
+        if: steps.list-changed.outputs.changed == 'true'
+        uses: helm/kind-action@v1
+
+      - name: Run chart-testing (install)
+        if: steps.list-changed.outputs.changed == 'true'
+        run: |
+          ct install --config ct.yaml \
+            --target-branch ${{ github.event.repository.default_branch }} \
+            --helm-extra-set-args "--set=secret.apiKey=ci-test-key --set=probes.liveness.enabled=false --set=probes.readiness.enabled=false --set=persistence.enabled=false"
