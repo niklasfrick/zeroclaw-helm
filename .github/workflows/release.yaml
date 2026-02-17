@@ -102,5 +102,11 @@ jobs:
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           git add chart/zeroclaw/Chart.yaml
-          git commit -m "chore(release): v${VERSION}"
-          git push
+          # Only commit+push when the file was actually modified
+          # (first release reads the existing version, so nothing changes)
+          if git diff --cached --quiet; then
+            echo "Chart.yaml already at version ${VERSION} — nothing to commit"
+          else
+            git commit -m "chore(release): v${VERSION}"
+            git push
+          fi
