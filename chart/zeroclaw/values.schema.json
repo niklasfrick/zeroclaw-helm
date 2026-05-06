@@ -646,6 +646,14 @@
               "type": "boolean",
               "default": true,
               "description": "Block high-risk commands entirely."
+            },
+            "autoApprove": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "default": [],
+              "description": "Tool operations that are automatically approved without user confirmation."
             }
           },
           "additionalProperties": false

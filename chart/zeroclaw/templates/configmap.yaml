@@ -57,6 +57,9 @@ data:
     max_cost_per_day_cents = {{ .Values.config.autonomy.maxCostPerDayCents }}
     require_approval_for_medium_risk = {{ .Values.config.autonomy.requireApprovalForMediumRisk }}
     block_high_risk_commands = {{ .Values.config.autonomy.blockHighRiskCommands }}
+    {{- if .Values.config.autonomy.autoApprove }}
+    auto_approve = {{ include "zeroclaw.tomlStringList" .Values.config.autonomy.autoApprove }}
+    {{- end }}
 
     # ── Runtime ───────────────────────────────────────────────
     [runtime]
